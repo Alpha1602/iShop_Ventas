@@ -422,7 +422,10 @@ window.addEventListener('DOMContentLoaded', fetchFromGitHub);
 //  PARSE EXCEL → RAW
 // ════════════════════════════════════════════════════════════════
 function parseWorkbook(wb) {
-  const ws = wb.Sheets[wb.SheetNames[0]];
+  // The workbook has multiple sheets — always use 'AlphaComm'
+  const sheetName = wb.SheetNames.find(n => n === 'AlphaComm') || wb.SheetNames[0];
+  console.log('[AlphaComm] Leyendo hoja:', sheetName, '| Hojas disponibles:', wb.SheetNames);
+  const ws = wb.Sheets[sheetName];
   const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:null, raw:true });
 
   // Week headers from row[2]
