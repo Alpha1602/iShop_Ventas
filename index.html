@@ -360,6 +360,13 @@ function showDashboard(badgeText) {
   document.getElementById('hdr-badge').textContent = badgeText;
   initUI();
   applyFilters();
+  // Show warning banner if no data parsed
+  if (RAW.byBrand.length === 0) {
+    const banner = document.createElement('div');
+    banner.style = 'background:#fef3c7;border:1px solid #f59e0b;color:#92400e;padding:12px 24px;font-size:13px;font-weight:600;text-align:center';
+    banner.textContent = '⚠️ El archivo se cargó pero no se encontraron datos. Verifica que sea el reporte correcto y recarga la página.';
+    document.getElementById('dashboard').prepend(banner);
+  }
 }
 
 function showManualUpload(errorMsg) {
@@ -471,6 +478,21 @@ function parseWorkbook(wb) {
   ALL_YEARS  = [...new Set(byBrand.map(r=>r.Año))].sort();
   ALL_BRANDS = [...new Set(byBrand.map(r=>r.Marca))].sort();
   ALL_CATS   = [...new Set(byBrand.map(r=>r.Categoria))].sort();
+
+  // Debug: log parse results to browser console
+  console.log('[AlphaComm] Parse completo:', {
+    filas_con_datos: byBrand.length,
+    años: ALL_YEARS,
+    marcas: ALL_BRANDS.length,
+    categorías: ALL_CATS,
+    semanas_detectadas: weekCols.length,
+    ultima_semana: weekCols.length ? weekCols[weekCols.length-1] : null,
+    año_2026_col: yrBounds[2026] ?? 'NO DETECTADO'
+  });
+
+  if (byBrand.length === 0) {
+    console.error('[AlphaComm] ⚠️ Sin datos — revisa columnas de categoría y semanas');
+  }
 }
 
 // ════════════════════════════════════════════════════════════════
