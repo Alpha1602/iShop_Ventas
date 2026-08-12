@@ -418,21 +418,33 @@ function parseWorkbook(wb) {
   const ws = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:null, raw:true });
 
-  // Year boundaries from row[1]
+  // Week headers from row[2]
+  const hdr = rows[2] || [];
+
+  // Year boundaries: first try explicit year numbers in row[1],
+  // then detect from W01 resets in row[2] (2026 is never in row 1)
   const yrRow = rows[1] || [];
   const yrBounds = {};
   yrRow.forEach((v,i) => { if (v===2024||v===2025||v===2026) yrBounds[v]=i; });
+  const w01cols = [];
+  hdr.forEach((h,i) => { if (i>14 && h==='W01') w01cols.push(i); });
+  if (w01cols[0] && !yrBounds[2024]) yrBounds[2024] = w01cols[0];
+  if (w01cols[1] && !yrBounds[2025]) yrBounds[2025] = w01cols[1];
+  if (w01cols[2])                    yrBounds[2026] = w01cols[2]; // row1 never has 2026
+
   function colYear(i) {
-    if (!yrBounds[2024]||i<yrBounds[2024]) return 2023;
-    if (!yrBounds[2025]||i<yrBounds[2025]) return 2024;
-    if (!yrBounds[2026]||i<yrBounds[2026]) return 2025;
+    if (!yrBounds[2024] || i < yrBounds[2024]) return 2023;
+    if (!yrBounds[2025] || i < yrBounds[2025]) return 2024;
+    if (!yrBounds[2026] || i < yrBounds[2026]) return 2025;
     return 2026;
   }
 
-  // Week columns from row[2]
-  const hdr = rows[2] || [];
+  // Collect all week columns — no hard upper limit so new weeks are included automatically
   const weekCols = [];
-  hdr.forEach((h,i) => { if (i>=14&&i<=144&&typeof h==='string'&&/^W\d+$/.test(h)) weekCols.push({col:i,wk:h,yr:colYear(i)}); });
+  hdr.forEach((h,i) => {
+    if (i >= 14 && typeof h === 'string' && /^W\d+$/.test(h))
+      weekCols.push({ col:i, wk:h, yr:colYear(i) });
+  });
 
   const byBrand = [];
   for (let ri=3; ri<rows.length; ri++) {
